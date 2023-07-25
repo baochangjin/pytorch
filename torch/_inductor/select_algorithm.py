@@ -22,7 +22,7 @@ from .autotune_process import BenchmarkRequest, TensorMeta
 from .codecache import code_hash, PersistentCache, PyCodeCache
 
 from .codegen.common import IndentedBuffer
-from .codegen.triton import texpr, TritonKernel, TritonPrinter, TritonScheduling
+from .codegen.triton import texpr, TritonKernel, TritonPrinter, TritonScheduling, TritonOverrides
 
 from .codegen.triton_utils import config_of, signature_of
 
@@ -61,6 +61,7 @@ class TritonTemplateKernel(TritonKernel):
         prefix_args=0,
         suffix_args=0,
         epilogue_fn=identity,
+        subgraph=None,
         *,
         index_dtype,
     ):
@@ -85,6 +86,8 @@ class TritonTemplateKernel(TritonKernel):
         self.prefix_args = prefix_args
         self.suffix_args = suffix_args
         self.epilogue_fn = epilogue_fn
+        # For additional graphs
+        self.subgraph = subgraph
 
     def jit_line(self):
         if self.use_jit:
@@ -181,6 +184,26 @@ class TritonTemplateKernel(TritonKernel):
             val = self.named_input_nodes[name].get_stride()[index]
         return texpr(self.rename_indexing(val))
 
+    def modification(self, fixed_inputs):
+        # HACK, but I can't figure out how to reuse existing Triton codegen properly
+        class PlaceholderSubstitution(V.MockHandler):
+            self.name = "PlaceholderSubstitution"
+
+            def load(self, name: str, index: sympy.Expr):
+                return f"({fixed_inputs[name]})"
+
+            def constant(self, value, dtype):
+                return TritonOverrides.constant(value, dtype)
+
+            def __getattr__(self, name):
+                return getattr(TritonOverrides, name)
+
+
+        with TritonKernel(1, 1, index_dtype=torch.int64) as kernel:
+            with V.set_ops_handler(PlaceholderSubstitution()):
+                out = self.subgraph.data.data.data.inner_fn((1,))
+                return out.value
+
     def store_output(self, indices, val, mask):
         """
         Hook called from template code to store the final output
@@ -260,6 +283,7 @@ class TritonTemplateKernel(TritonKernel):
                 self.size,
                 self.stride,
                 self.store_output,
+                self.modification,
                 self.make_load,
             ]
         }
@@ -387,6 +411,7 @@ class TritonTemplate:
         layout,
         num_stages,
         num_warps,
+        subgraph=None,
         prefix_args=0,
         suffix_args=0,
         epilogue_fn=identity,
@@ -420,6 +445,7 @@ class TritonTemplate:
             suffix_args=suffix_args,
             epilogue_fn=epilogue_fn,
             index_dtype="tl.int32",
+            subgraph=subgraph,
         )
         with patch.object(
             V.graph, "get_dtype", self.fake_get_dtype(fake_out)
