@@ -22,7 +22,7 @@ from torch.ao.quantization.observer import (
 
 from torch.ao.quantization.pt2e.graph_utils import find_sequential_partitions
 
-from torch.ao.quantization.pt2e.quantizer.utils import (
+from torch.ao.quantization.quantizer.utils import (
     _annotate_input_qspec_map,
     _annotate_output_qspec,
     _is_sym_size_node,

@@ -124,7 +124,6 @@ torch.ao.quantization.pt2e (quantization in pytorch 2.0 export)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: torch.ao.quantization.pt2e
-.. automodule:: torch.ao.quantization.pt2e.quantizer
 .. automodule:: torch.ao.quantization.pt2e.representation
 
 torch (quantization related functions)

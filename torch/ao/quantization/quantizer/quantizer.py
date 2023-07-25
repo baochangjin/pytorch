@@ -95,7 +95,7 @@ input edge is the connection between input node and the node consuming the input
 output value is an fx Node
 """
 EdgeOrNode = Union[Tuple[Node, Node], Node]
-EdgeOrNode.__module__ = "torch.ao.quantization.pt2e.quantizer.quantizer"
+EdgeOrNode.__module__ = "torch.ao.quantization.quantizer.quantizer"
 
 @dataclass(eq=True, frozen=True)
 class SharedQuantizationSpec(QuantizationSpecBase):
@@ -126,7 +126,7 @@ class QuantizationConfig:
     is_qat: bool = False
 
 OperatorPatternType = List[Callable]
-OperatorPatternType.__module__ = "torch.ao.quantization.pt2e.quantizer.quantizer"
+OperatorPatternType.__module__ = "torch.ao.quantization.quantizer.quantizer"
 
 class OperatorConfig(NamedTuple):
     # fix List[str] with List[List[Union[nn.Module, FunctionType, BuiltinFunctionType]]]
